@@ -1,5 +1,18 @@
+import subprocess
+import sys
+
+# --- HACK PARA STREAMLIT CLOUD ---
+# Forzamos a usar la versión "headless" (sin interfaz gráfica) de OpenCV 
+# para evitar los errores de librerías de Linux (libGL, libglib)
+try:
+    import cv2
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "uninstall", "-y", "opencv-python"])
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "opencv-python-headless"])
+    import cv2
+# ---------------------------------
+
 import streamlit as st
-import cv2
 import numpy as np
 from ultralytics import YOLO
 from streamlit_webrtc import webrtc_streamer, VideoTransformerBase
