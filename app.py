@@ -113,4 +113,3 @@
     El modelo YOLOv8 estándar (COCO dataset) puede detectar personas y motos. Para detectar armas de fuego (pistolas, rifles), se requiere un modelo YOLO entrenado específicamente con un conjunto de datos de armas. 
     En esta fase inicial, la alerta se dispara cuando hay personas y motocicletas simultáneamente.
     """)
-    
