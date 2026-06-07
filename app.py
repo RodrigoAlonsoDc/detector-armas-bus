@@ -81,17 +81,73 @@ class VideoProcessor(VideoTransformerBase):
             
         return av.VideoFrame.from_ndarray(img, format="bgr24")
 
-st.subheader("Cámara de Monitoreo")
-st.write("Presiona 'START' y permite el acceso a tu cámara para iniciar la detección.")
+# --- Opciones de Prueba ---
+tab1, tab2 = st.tabs(["Cámara en Vivo (WebRTC)", "Tomar Foto (Recomendado)"])
 
-webrtc_ctx = webrtc_streamer(
-    key="object-detection",
-    video_processor_factory=VideoProcessor,
-    rtc_configuration={
-        "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
-    },
-    media_stream_constraints={"video": True, "audio": False},
-)
+with tab1:
+    st.subheader("Cámara en Vivo")
+    st.write("Requiere buena conexión y puertos abiertos. Si falla, usa la pestaña 'Tomar Foto'.")
+    
+    webrtc_ctx = webrtc_streamer(
+        key="object-detection",
+        video_processor_factory=VideoProcessor,
+        rtc_configuration={
+            "iceServers": [
+                {"urls": ["stun:stun.l.google.com:19302"]},
+                {"urls": ["stun:stun1.l.google.com:19302"]},
+            ]
+        },
+        media_stream_constraints={"video": True, "audio": False},
+    )
+
+with tab2:
+    st.subheader("Tomar Foto (Sin errores de red)")
+    st.write("Toma una foto con tu celular para probar el modelo instantáneamente. ¡Funciona siempre!")
+    
+    foto = st.camera_input("Capturar imagen")
+    
+    if foto is not None:
+        # Convertir la foto a un formato que OpenCV pueda leer
+        bytes_data = foto.getvalue()
+        cv2_img = cv2.imdecode(np.frombuffer(bytes_data, np.uint8), cv2.IMREAD_COLOR)
+        
+        # Procesar con YOLO
+        results = model(cv2_img, verbose=False)
+        
+        detected_person = False
+        detected_motorcycle = False
+        
+        for result in results:
+            boxes = result.boxes
+            for box in boxes:
+                class_id = int(box.cls[0])
+                conf = float(box.conf[0])
+                x1, y1, x2, y2 = map(int, box.xyxy[0])
+                
+                label = ""
+                color = (0, 255, 0)
+                
+                if class_id == PERSON_CLASS_ID and conf > 0.5:
+                    detected_person = True
+                    label = f"Persona {conf:.2f}"
+                    color = (255, 165, 0)
+                elif class_id == MOTORCYCLE_CLASS_ID and conf > 0.5:
+                    detected_motorcycle = True
+                    label = f"Moto {conf:.2f}"
+                    color = (0, 0, 255)
+                    
+                if label:
+                    cv2.rectangle(cv2_img, (x1, y1), (x2, y2), color, 2)
+                    cv2.putText(cv2_img, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+                    
+        if detected_person and detected_motorcycle:
+            cv2.rectangle(cv2_img, (0, 0), (cv2_img.shape[1], cv2_img.shape[0]), (0, 0, 255), 10)
+            st.error("🚨 ¡ALERTA! MOTO Y PERSONA DETECTADOS 🚨")
+        else:
+            st.success("✅ Área segura. No se detectaron amenazas.")
+            
+        # Mostrar resultado
+        st.image(cv2_img, channels="BGR", use_container_width=True)
 
 # Nota sobre armas
 st.markdown("---")
