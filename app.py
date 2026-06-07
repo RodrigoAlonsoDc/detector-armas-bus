@@ -7,8 +7,8 @@ import sys
 try:
     import cv2
 except ImportError:
-    subprocess.check_call([sys.executable, "-m", "pip", "uninstall", "-y", "opencv-python"])
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "opencv-python-headless"])
+    subprocess.run([sys.executable, "-m", "pip", "uninstall", "-y", "opencv-python", "opencv-python-headless"])
+    subprocess.run([sys.executable, "-m", "pip", "install", "opencv-python-headless==4.9.0.80"])
     import cv2
 # ---------------------------------
 
